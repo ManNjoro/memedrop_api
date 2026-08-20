@@ -6,6 +6,12 @@ import { currentUserId } from '../middleware/requireAuth.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import type { CreateMemeInput, MemeQuery } from '../validators/memes.validators.js';
 
+/**
+ * POST /api/memes
+ * Called after the client has already uploaded the file directly to
+ * Cloudinary using a signature from POST /api/upload/signature. This just
+ * persists the resulting metadata to Neon.
+ */
 export async function createMeme(req: Request, res: Response) {
   const input = req.body as CreateMemeInput;
   const uploaderId = currentUserId(req);
@@ -48,12 +54,18 @@ export async function createMeme(req: Request, res: Response) {
   res.status(201).json(meme);
 }
 
+/**
+ * GET /api/memes
+ * Powers Home, Explore's "Trending now", and Search Results.
+ * q + mediaType + sort + cursor-based pagination.
+ */
 export async function listMemes(req: Request, res: Response) {
   const { q, mediaType, sort, cursor, limit } = req.query as unknown as MemeQuery;
 
   const conditions = [];
   if (mediaType) conditions.push(eq(memes.mediaType, mediaType));
   if (q) {
+    // Matches title, or any tag the meme has, via a correlated subquery.
     conditions.push(
       sql`(${ilike(memes.title, `%${q}%`)} OR EXISTS (
         SELECT 1 FROM ${memeTags}

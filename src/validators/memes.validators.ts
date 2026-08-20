@@ -21,7 +21,7 @@ export const memeQuerySchema = z.object({
   q: z.string().trim().optional(),
   mediaType: z.enum(['image', 'video']).optional(),
   sort: z.enum(['newest', 'oldest', 'most_downloaded', 'most_popular']).default('newest'),
-  cursor: z.string().datetime().optional(), // createdAt of the last item from the previous page
+  cursor: z.iso.datetime().optional(), // createdAt of the last item from the previous page
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 

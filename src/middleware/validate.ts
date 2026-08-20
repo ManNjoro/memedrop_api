@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { ZodType } from 'zod';
+import z, { ZodType } from 'zod';
 
 
 
@@ -12,7 +12,7 @@ export function validate(schema: ZodType, source: Source = 'body') {
     if (!result.success) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: result.error.flatten().fieldErrors,
+        details: z.treeifyError(result.error),
       });
     }
     req[source] = result.data;

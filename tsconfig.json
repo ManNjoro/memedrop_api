@@ -18,7 +18,6 @@
     "strict": true,                                   /* Enables all strict type-checking options */
     "forceConsistentCasingInFileNames": true,        /* Ensures imports match exact file casing on all OS */
     "skipLibCheck": true,                              /* Skips type checking of .d.ts files for faster compilation */
-    "types": ["node"]
   },
   "include": ["src/**/*"],                            /* Files to include in the compilation */
   "exclude": ["node_modules", "dist", "**/*.spec.ts"] /* Files to ignore during compilation */

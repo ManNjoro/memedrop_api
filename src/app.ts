@@ -7,7 +7,7 @@ import usersRoutes from './routes/users.routes.js';
 import webhookRoutes from './routes/webhooks.routes.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 
-export function createApp() {
+function createApp() {
   const app = express();
 
   const allowedOrigins = (process.env.CORS_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean);

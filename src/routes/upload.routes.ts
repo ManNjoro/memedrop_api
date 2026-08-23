@@ -1,8 +1,8 @@
 import { Router } from 'express';
+import { cleanupUpload, createUploadSignature } from '../controllers/upload.controller.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { validate } from '../middleware/validate.js';
-import { uploadSignatureSchema, cleanupUploadSchema } from '../validators/memes.validators.js';
-import { createUploadSignature, cleanupUpload } from '../controllers/upload.controller.js';
+import { cleanupUploadSchema, uploadSignatureSchema } from '../validators/memes.validators.js';
 
 const router = Router();
 

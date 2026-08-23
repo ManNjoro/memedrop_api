@@ -1,9 +1,11 @@
+// src/controllers/memes.controller.ts
 import type { Request, Response } from 'express';
 import { and, desc, asc, eq, ilike, sql, lt, gt } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { memes, tags, memeTags, users } from '../db/schema.js';
 import { currentUserId } from '../middleware/requireAuth.js';
 import { ApiError } from '../middleware/errorHandler.js';
+import { cloudinary } from '../lib/cloudinary.js';
 import type { CreateMemeInput, MemeQuery } from '../validators/memes.validators.js';
 
 /**
@@ -145,4 +147,33 @@ export async function recordDownload(req: Request<{ id: string }>, res: Response
 
   if (!updated) throw new ApiError(404, 'Meme not found.');
   res.json({ downloadsCount: updated.downloadsCount });
+}
+
+/**
+ * DELETE /api/memes/:id
+ * Only the uploader can delete their own meme. Removes the asset from
+ * Cloudinary first, then the row from Neon — memeTags and savedMemes rows
+ * for it are cleaned up automatically via ON DELETE CASCADE in the schema.
+ */
+export async function deleteMeme(req: Request<{ id: string }>, res: Response) {
+  const { id } = req.params;
+  const userId = currentUserId(req);
+
+  const meme = await db.query.memes.findFirst({ where: eq(memes.id, id) });
+  if (!meme) throw new ApiError(404, 'Meme not found.');
+  if (meme.uploaderId !== userId) throw new ApiError(403, 'You can only delete your own memes.');
+
+  try {
+    await cloudinary.uploader.destroy(meme.cloudinaryPublicId, {
+      resource_type: meme.mediaType === 'video' ? 'video' : 'image',
+    });
+  } catch (err) {
+    // Don't let a Cloudinary hiccup block deletion — an orphaned Cloudinary
+    // asset is a much smaller problem than a meme the user can't remove.
+    console.error(`Failed to delete Cloudinary asset ${meme.cloudinaryPublicId}:`, err);
+  }
+
+  await db.delete(memes).where(eq(memes.id, id));
+
+  res.status(204).send();
 }

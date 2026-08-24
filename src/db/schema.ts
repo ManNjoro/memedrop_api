@@ -13,10 +13,11 @@ import { relations } from 'drizzle-orm';
 
 export const mediaTypeEnum = pgEnum('media_type', ['image', 'video']);
 
-
 export const users = pgTable('users', {
   id: text('id').primaryKey(), // Clerk user id
   username: text('username').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
   avatarUrl: text('avatar_url'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

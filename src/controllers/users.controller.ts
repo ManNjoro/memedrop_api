@@ -1,3 +1,4 @@
+// src/controllers/users.controller.ts
 import type { Request, Response } from 'express';
 import { eq, desc, count } from 'drizzle-orm';
 import { clerkClient } from '@clerk/express';
@@ -26,10 +27,22 @@ export async function syncCurrentUser(req: Request, res: Response) {
 
   const [user] = await db
     .insert(users)
-    .values({ id: userId, username: clerkUser.username, avatarUrl: clerkUser.imageUrl })
+    .values({
+      id: userId,
+      username: clerkUser.username,
+      firstName: clerkUser.firstName,
+      lastName: clerkUser.lastName,
+      avatarUrl: clerkUser.imageUrl,
+    })
     .onConflictDoUpdate({
       target: users.id,
-      set: { username: clerkUser.username, avatarUrl: clerkUser.imageUrl, updatedAt: new Date() },
+      set: {
+        username: clerkUser.username,
+        firstName: clerkUser.firstName,
+        lastName: clerkUser.lastName,
+        avatarUrl: clerkUser.imageUrl,
+        updatedAt: new Date(),
+      },
     })
     .returning();
 
@@ -51,6 +64,8 @@ export async function getUserProfile(req: Request<{ username: string }>, res: Re
   res.json({
     id: user.id,
     username: user.username,
+    firstName: user.firstName,
+    lastName: user.lastName,
     avatarUrl: user.avatarUrl,
     createdAt: user.createdAt,
     memeCount,

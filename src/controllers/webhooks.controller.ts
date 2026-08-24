@@ -8,6 +8,8 @@ import { ApiError } from '../middleware/errorHandler.js';
 type ClerkUserPayload = {
   id: string;
   username: string | null;
+  first_name: string | null;
+  last_name: string | null;
   image_url: string | null;
 };
 
@@ -48,14 +50,14 @@ export async function handleClerkWebhook(req: Request, res: Response) {
   switch (event.type) {
     case 'user.created':
     case 'user.updated': {
-      const { id, username, image_url } = event.data;
+      const { id, username, first_name, last_name, image_url } = event.data;
       if (!username) break; // shouldn't happen since sign-up requires a username, but guard anyway
       await db
         .insert(users)
-        .values({ id, username, avatarUrl: image_url })
+        .values({ id, username, firstName: first_name, lastName: last_name, avatarUrl: image_url })
         .onConflictDoUpdate({
           target: users.id,
-          set: { username, avatarUrl: image_url, updatedAt: new Date() },
+          set: { username, firstName: first_name, lastName: last_name, avatarUrl: image_url, updatedAt: new Date() },
         });
       break;
     }

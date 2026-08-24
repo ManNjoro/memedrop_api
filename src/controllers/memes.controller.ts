@@ -7,6 +7,7 @@ import { currentUserId } from '../middleware/requireAuth.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { cloudinary } from '../lib/cloudinary.js';
 import type { CreateMemeInput, MemeQuery } from '../validators/memes.validators.js';
+import { logger } from '../logger/logger.js';
 
 /**
  * POST /api/memes
@@ -170,7 +171,7 @@ export async function deleteMeme(req: Request<{ id: string }>, res: Response) {
   } catch (err) {
     // Don't let a Cloudinary hiccup block deletion — an orphaned Cloudinary
     // asset is a much smaller problem than a meme the user can't remove.
-    console.error(`Failed to delete Cloudinary asset ${meme.cloudinaryPublicId}:`, err);
+    logger.error(`Failed to delete Cloudinary asset ${meme.cloudinaryPublicId}: ${err}`);
   }
 
   await db.delete(memes).where(eq(memes.id, id));

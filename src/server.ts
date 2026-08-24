@@ -7,6 +7,8 @@ import memesRoutes from './routes/memes.routes.js';
 import usersRoutes from './routes/users.routes.js';
 import webhookRoutes from './routes/webhooks.routes.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
+import { httpLogger } from './logger/httpLogger.js';
+import { logger } from './logger/logger.js';
 
 function createApp() {
   const app = express();
@@ -39,7 +41,8 @@ function createApp() {
 
 const port = Number(process.env.PORT ?? 4000);
 const app = createApp();
+app.use(httpLogger)
 
 app.listen(port, () => {
-  console.log(`MemeDrop API listening on http://localhost:${port}`);
+  logger.info(`MemeDrop API listening on http://localhost:${port}`);
 });

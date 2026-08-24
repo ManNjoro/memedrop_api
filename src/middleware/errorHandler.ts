@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { logger } from '../logger/logger.js';
 
 export class ApiError extends Error {
   status: number;
@@ -17,6 +18,6 @@ export function errorHandler(err: unknown, req: Request, res: Response, next: Ne
   if (err instanceof ApiError) {
     return res.status(err.status).json({ error: err.message });
   }
-  console.error(err);
+  logger.error(err);
   res.status(500).json({ error: 'Something went wrong on our end.' });
 }

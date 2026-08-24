@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { cloudinary } from '../lib/cloudinary.js';
 import { currentUserId } from '../middleware/requireAuth.js';
 import { ApiError } from '../middleware/errorHandler.js';
+import { logger } from '../logger/logger.js';
 
 /**
  * POST /api/upload/signature
@@ -79,7 +80,7 @@ export async function cleanupUpload(req: Request, res: Response) {
   } catch (err) {
     // Don't fail the request over this — it's best-effort. Worst case, an
     // orphaned asset sits in Cloudinary until a future reconciliation pass.
-    console.error(`Failed to clean up orphaned Cloudinary asset ${publicId}:`, err);
+    logger.error(`Failed to clean up orphaned Cloudinary asset ${publicId}: ${err}`);
   }
 
   res.status(204).send();

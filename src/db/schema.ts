@@ -13,8 +13,13 @@ import { relations } from 'drizzle-orm';
 
 export const mediaTypeEnum = pgEnum('media_type', ['image', 'video']);
 
+/**
+ * Mirrors the Clerk user, synced via the Clerk webhook (user.created /
+ * user.updated). id is Clerk's user id (e.g. "user_2abc...") — using it
+ * directly avoids a separate mapping table.
+ */
 export const users = pgTable('users', {
-  id: text('id').primaryKey(), // Clerk user id
+  id: text('id').primaryKey(),
   username: text('username').notNull(),
   firstName: text('first_name'),
   lastName: text('last_name'),
@@ -42,6 +47,7 @@ export const memes = pgTable('memes', {
 
   downloadsCount: integer('downloads_count').notNull().default(0),
   likesCount: integer('likes_count').notNull().default(0),
+  viewsCount: integer('views_count').notNull().default(0),
 
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
@@ -72,11 +78,26 @@ export const savedMemes = pgTable('saved_memes', {
   primaryKey({ columns: [t.userId, t.memeId] }),
 ]);
 
+/**
+ * Per-user like records — needed alongside memes.likesCount because the
+ * counter alone can't answer "has *this* viewer already liked this meme"
+ * (to render a filled vs. outline heart) or prevent the same person
+ * inflating the count by liking repeatedly.
+ */
+export const likes = pgTable('likes', {
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  memeId: uuid('meme_id').notNull().references(() => memes.id, { onDelete: 'cascade' }),
+  likedAt: timestamp('liked_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.memeId] }),
+]);
+
 // --- Relations (used for Drizzle's relational query API, e.g. db.query.memes.findMany({ with: { uploader: true, tags: true } })) ---
 
 export const usersRelations = relations(users, ({ many }) => ({
   memes: many(memes),
   savedMemes: many(savedMemes),
+  likes: many(likes),
 }));
 
 export const memesRelations = relations(memes, ({ one, many }) => ({
@@ -96,4 +117,9 @@ export const memeTagsRelations = relations(memeTags, ({ one }) => ({
 export const savedMemesRelations = relations(savedMemes, ({ one }) => ({
   user: one(users, { fields: [savedMemes.userId], references: [users.id] }),
   meme: one(memes, { fields: [savedMemes.memeId], references: [memes.id] }),
+}));
+
+export const likesRelations = relations(likes, ({ one }) => ({
+  user: one(users, { fields: [likes.userId], references: [users.id] }),
+  meme: one(memes, { fields: [likes.memeId], references: [memes.id] }),
 }));

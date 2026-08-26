@@ -1,10 +1,10 @@
-import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { clerkMiddleware } from '@clerk/express';
 import uploadRoutes from './routes/upload.routes.js';
 import memesRoutes from './routes/memes.routes.js';
 import usersRoutes from './routes/users.routes.js';
+import savedRoutes from './routes/saved.routes.js';
 import webhookRoutes from './routes/webhooks.routes.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 import { httpLogger } from './logger/httpLogger.js';
@@ -32,6 +32,7 @@ function createApp() {
   app.use('/api/upload', uploadRoutes);
   app.use('/api/memes', memesRoutes);
   app.use('/api/users', usersRoutes);
+  app.use('/api/saved', savedRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

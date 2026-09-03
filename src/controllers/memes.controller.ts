@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { and, desc, asc, eq, ilike, sql, lt, gt } from 'drizzle-orm';
+import { and, or, desc, asc, eq, ilike, sql, lt, gt } from 'drizzle-orm';
 import { getAuth } from '@clerk/express';
 import { db } from '../db/index.js';
 import { memes, tags, memeTags, users, likes, savedMemes } from '../db/schema.js';
@@ -7,7 +7,31 @@ import { currentUserId } from '../middleware/requireAuth.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { cloudinary } from '../lib/cloudinary.js';
 import type { CreateMemeInput, MemeQuery } from '../validators/memes.validators.js';
-import { logger } from '../logger/logger.js';
+
+/**
+ * Opaque pagination cursor. Carries both the value of whatever column the
+ * current sort orders by (createdAt for newest/oldest, likesCount for
+ * most_popular, downloadsCount for most_downloaded) AND the row's id as a
+ * tiebreaker — a single-column cursor isn't enough once many rows can tie
+ * on the same likesCount/downloadsCount value (extremely common early on,
+ * when most memes sit at 0), since SQL gives no stable ordering guarantee
+ * across ties without a unique secondary sort key.
+ */
+type CursorPayload = { value: string; id: string };
+
+function encodeCursor(payload: CursorPayload): string {
+  return Buffer.from(JSON.stringify(payload)).toString('base64url');
+}
+
+function decodeCursor(cursor: string): CursorPayload | null {
+  try {
+    const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+    if (typeof parsed?.value === 'string' && typeof parsed?.id === 'string') return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * POST /api/memes
@@ -82,10 +106,24 @@ export async function listMemes(req: Request, res: Response) {
     sort === 'most_downloaded' ? memes.downloadsCount :
     sort === 'most_popular' ? memes.likesCount :
     memes.createdAt;
+  // Every mode except "oldest" sorts descending — including most_popular
+  // and most_downloaded, which both want the highest counts first.
   const sortDir = sort === 'oldest' ? asc : desc;
+  const isNumericSort = sort === 'most_popular' || sort === 'most_downloaded';
 
-  if (cursor && (sort === 'newest' || sort === 'oldest')) {
-    conditions.push(sort === 'oldest' ? gt(memes.createdAt, new Date(cursor)) : lt(memes.createdAt, new Date(cursor)));
+  if (cursor) {
+    const decoded = decodeCursor(cursor);
+    if (decoded) {
+      const cursorValue = isNumericSort ? Number(decoded.value) : new Date(decoded.value);
+      // Tuple comparison (sortColumn, id) vs (cursorValue, cursor.id), matching
+      // the ORDER BY below exactly — this is what makes pagination advance
+      // correctly even when many rows share the same sortColumn value.
+      conditions.push(
+        sort === 'oldest'
+          ? or(gt(sortColumn, cursorValue as never), and(eq(sortColumn, cursorValue as never), gt(memes.id, decoded.id)))
+          : or(lt(sortColumn, cursorValue as never), and(eq(sortColumn, cursorValue as never), lt(memes.id, decoded.id)))
+      );
+    }
   }
 
   const results = await db
@@ -109,10 +147,22 @@ export async function listMemes(req: Request, res: Response) {
     .from(memes)
     .innerJoin(users, eq(memes.uploaderId, users.id))
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(sortDir(sortColumn))
+    // id as a secondary sort key is required, not cosmetic — it's what
+    // gives ties a stable, deterministic order that the cursor's tuple
+    // comparison above can actually rely on.
+    .orderBy(sortDir(sortColumn), sortDir(memes.id))
     .limit(limit);
 
-  const nextCursor = results.length === limit ? results[results.length - 1].createdAt.toISOString() : null;
+  const last = results[results.length - 1];
+  const nextCursor =
+    results.length === limit && last
+      ? encodeCursor({
+          value: isNumericSort
+            ? String(sort === 'most_popular' ? last.likesCount : last.downloadsCount)
+            : last.createdAt.toISOString(),
+          id: last.id,
+        })
+      : null;
 
   res.json({ memes: results, nextCursor });
 }
@@ -315,11 +365,10 @@ export async function deleteMeme(req: Request<{ id: string }>, res: Response) {
     await cloudinary.uploader.destroy(meme.cloudinaryPublicId, {
       resource_type: meme.mediaType === 'video' ? 'video' : 'image',
     });
-    logger.info(`Cloudinary asset deleted: ${meme.title}`)
   } catch (err) {
     // Don't let a Cloudinary hiccup block deletion — an orphaned Cloudinary
     // asset is a much smaller problem than a meme the user can't remove.
-    logger.error(`Failed to delete Cloudinary asset ${meme.cloudinaryPublicId}: ${err}`);
+    console.error(`Failed to delete Cloudinary asset ${meme.cloudinaryPublicId}:`, err);
   }
 
   await db.delete(memes).where(eq(memes.id, id));

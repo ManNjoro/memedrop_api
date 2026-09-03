@@ -1,3 +1,4 @@
+// src/validators/memes.validators.ts
 import { z } from 'zod';
 
 export const uploadSignatureSchema = z.object({
@@ -15,8 +16,8 @@ export const createMemeSchema = z.object({
   tags: z.array(z.string().trim().min(1).max(30)).max(8).optional().default([]),
   mediaType: z.enum(['image', 'video']),
   cloudinaryPublicId: z.string().min(1),
-  mediaUrl: z.url(),
-  thumbnailUrl: z.url().optional(),
+  mediaUrl: z.string().url(),
+  thumbnailUrl: z.string().url().optional(),
   durationSec: z.number().int().positive().max(60).optional(),
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
@@ -26,7 +27,11 @@ export const memeQuerySchema = z.object({
   q: z.string().trim().optional(),
   mediaType: z.enum(['image', 'video']).optional(),
   sort: z.enum(['newest', 'oldest', 'most_downloaded', 'most_popular']).default('newest'),
-  cursor: z.iso.datetime().optional(), // createdAt of the last item from the previous page
+  // Opaque, base64url-encoded token (see encodeCursor/decodeCursor in
+  // memes.controller.ts) — no longer a raw ISO datetime string, since it
+  // now has to carry whichever column the current sort orders by
+  // (createdAt, likesCount, or downloadsCount) plus an id tiebreaker.
+  cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 

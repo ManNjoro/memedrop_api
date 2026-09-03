@@ -1,4 +1,3 @@
-// src/validators/memes.validators.ts
 import { z } from 'zod';
 
 export const uploadSignatureSchema = z.object({
@@ -27,10 +26,6 @@ export const memeQuerySchema = z.object({
   q: z.string().trim().optional(),
   mediaType: z.enum(['image', 'video']).optional(),
   sort: z.enum(['newest', 'oldest', 'most_downloaded', 'most_popular']).default('newest'),
-  // Opaque, base64url-encoded token (see encodeCursor/decodeCursor in
-  // memes.controller.ts) — no longer a raw ISO datetime string, since it
-  // now has to carry whichever column the current sort orders by
-  // (createdAt, likesCount, or downloadsCount) plus an id tiebreaker.
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });

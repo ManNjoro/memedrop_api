@@ -33,6 +33,7 @@ export async function cleanupDanglingMedia() {
       const result = await cloudinary.api.resources({
         resource_type: resourceType,
         type: 'upload',
+        prefix: `memedrop/${resourceType}s/`,
         max_results: 500,
         ...(nextCursor ? { next_cursor: nextCursor } : {}),
       });

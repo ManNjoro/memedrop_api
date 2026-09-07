@@ -379,6 +379,7 @@ export async function deleteMeme(req: Request<{ id: string }>, res: Response) {
 
 export async function cleanupMedia(req: Request, res: Response) {
   const authHeader = req.headers.authorization;
+  console.log("AUTH HEADER:", authHeader)
 
   if (authHeader !== `Bearer ${process.env.CLEANUP_SECRET}`) {
     return res.status(401).json({

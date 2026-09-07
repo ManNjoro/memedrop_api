@@ -1,14 +1,14 @@
 name: Cloudinary media cleanup
 
 on:
-  workflow_dispatch:
-  schedule:
-   - cron: '*/5 * * * *' # Every 10th minute (0, 10, 20....) after 10 minutes
+  # workflow_dispatch:
+  # schedule:
+  #  - cron: '*/5 * * * *' # Every 10th minute (0, 10, 20....) after 10 minutes
 
 jobs:
-  health:
+  cleanup:
     runs-on: ubuntu-latest
     steps:
       - name: Cleanup dangling media
-        run: |
-          curl -X POST "${{ secrets.API_URL }}/api/memes/cleanup" -H "Authorization: Bearer ${{ secrets.CLEANUP_SECRET }}"
+        run: 
+          # curl -X POST "${{ secrets.API_URL }}/api/memes/cleanup" -H "Authorization: Bearer ${{ secrets.CLEANUP_SECRET }}"

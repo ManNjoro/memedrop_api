@@ -7,6 +7,7 @@ import { currentUserId } from '../middleware/requireAuth.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { cloudinary } from '../lib/cloudinary.js';
 import type { CreateMemeInput, MemeQuery } from '../validators/memes.validators.js';
+import { cleanupDanglingMedia } from '../services/cloudinary.service.js';
 
 /**
  * Opaque pagination cursor. Carries both the value of whatever column the
@@ -374,4 +375,29 @@ export async function deleteMeme(req: Request<{ id: string }>, res: Response) {
   await db.delete(memes).where(eq(memes.id, id));
 
   res.status(204).send();
+}
+
+export async function cleanupMedia(req: Request, res: Response) {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader !== `Bearer ${process.env.CLEANUP_SECRET}`) {
+    return res.status(401).json({
+      message: 'Unauthorized',
+    });
+  }
+
+  try {
+    const result = await cleanupDanglingMedia();
+
+    return res.status(200).json({
+      message: 'Cloudinary cleanup completed.',
+      ...result,
+    });
+  } catch (error) {
+    console.error('Cloudinary cleanup failed:', error);
+
+    return res.status(500).json({
+      message: 'Cloudinary cleanup failed.',
+    });
+  }
 }

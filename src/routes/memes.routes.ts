@@ -13,6 +13,7 @@ import {
   unlikeMeme,
   saveMeme,
   unsaveMeme,
+  cleanupMedia,
 } from '../controllers/memes.controller.js';
 
 const router = Router();
@@ -27,5 +28,6 @@ router.delete('/:id/like', requireAuth, unlikeMeme);
 router.post('/:id/save', requireAuth, saveMeme);
 router.delete('/:id/save', requireAuth, unsaveMeme);
 router.delete('/:id', requireAuth, deleteMeme);
+router.post('/cleanup', cleanupMedia);
 
 export default router;

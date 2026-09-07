@@ -10,6 +10,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cleanup dangling media
-        run: |
-          curl -X POST "${{ secrets.API_URL }}/api/memes/cleanup" \
-      -H "Authorization: Bearer ${{ secrets.CLEANUP_SECRET }}"
+        run: curl -X POST "${{ secrets.API_URL }}/api/memes/cleanup" -H "Authorization: Bearer ${{ secrets.CLEANUP_SECRET }}"

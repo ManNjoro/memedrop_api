@@ -151,7 +151,7 @@ export async function listMemes(req: Request, res: Response) {
     // id as a secondary sort key is required, not cosmetic — it's what
     // gives ties a stable, deterministic order that the cursor's tuple
     // comparison above can actually rely on.
-    .orderBy(sortDir(sortColumn), sortDir(memes.likesCount))
+    .orderBy(sortDir(sortColumn), sortDir(memes.id))
     .limit(limit);
 
   const last = results[results.length - 1];

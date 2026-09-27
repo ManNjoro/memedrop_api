@@ -159,7 +159,7 @@ export async function listMemes(req: Request, res: Response) {
     results.length === limit && last
       ? encodeCursor({
           value: isNumericSort
-            ? String(sort === 'most_popular' ? last.viewsCount : last.likesCount)
+            ? String(sort === 'most_popular' ? last.viewsCount : last.downloadsCount)
             : last.createdAt.toISOString(),
           id: last.id,
         })

@@ -105,7 +105,7 @@ export async function listMemes(req: Request, res: Response) {
 
   const sortColumn =
     sort === 'most_downloaded' ? memes.downloadsCount :
-    sort === 'most_popular' ? memes.likesCount :
+    sort === 'most_popular' ? memes.viewsCount :
     memes.createdAt;
   // Every mode except "oldest" sorts descending — including most_popular
   // and most_downloaded, which both want the highest counts first.
@@ -151,7 +151,7 @@ export async function listMemes(req: Request, res: Response) {
     // id as a secondary sort key is required, not cosmetic — it's what
     // gives ties a stable, deterministic order that the cursor's tuple
     // comparison above can actually rely on.
-    .orderBy(sortDir(sortColumn), sortDir(memes.id))
+    .orderBy(sortDir(sortColumn), sortDir(memes.likesCount))
     .limit(limit);
 
   const last = results[results.length - 1];
@@ -159,7 +159,7 @@ export async function listMemes(req: Request, res: Response) {
     results.length === limit && last
       ? encodeCursor({
           value: isNumericSort
-            ? String(sort === 'most_popular' ? last.likesCount : last.downloadsCount)
+            ? String(sort === 'most_popular' ? last.viewsCount : last.likesCount)
             : last.createdAt.toISOString(),
           id: last.id,
         })
